@@ -19,15 +19,20 @@ fn read_file_to_string_or_empty(path: &str) -> String {
 }
 
 pub async fn start_web_server(state: AppState) {
-    let mut app = tide::with_state(state);
+    let mut app = tide::with_state(state.clone());
     // Serve /webcontent/index.html for the root /
     // Serve /webcontent/index.html for the root /
     app.at("/").get(serve_index_html);
 
     // Serve the rest of /webcontent/ as a directory
     let _ = app.at("/").serve_dir("webcontent/");
-
-    let _ = app.listen("0.0.0.0:80").await;
+    let mut address = String::new();
+    let config = state.config.lock().await;
+    address += config.interface.clone().as_str();
+    address += ":";
+    address += config.port.as_str();
+    drop(config);
+    let _ = app.listen(address).await;
 }
 
 async fn serve_index_html(req: tide::Request<AppState>) -> tide::Result {
